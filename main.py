@@ -12,6 +12,7 @@ class Game():
     def __init__(self):
         self.allice_lst = []
         self.obsticle_lst = []
+        self.allins_laser_lst = []
         self.player = Player()
         self.laser = Laser()
         self.number_of_aliens = 55
@@ -37,6 +38,18 @@ class Game():
         try:
             if self.laser.pos_y + self.laser.laser_size_y < 0:
                 self.laser.laser_is_out = False
+            for obsticle in self.obsticle_lst:
+                if obsticle.pos_x - self.laser.pos_x < 0 and abs(obsticle.pos_x - self.laser.pos_x) <= obsticle.size:
+                    if obsticle.pos_y - self.laser.pos_y > 0 and (obsticle.pos_y - self.laser.pos_y) <= obsticle.size:
+                        self.obsticle_lst.remove(obsticle)
+                        self.laser = Laser()
+            
+            for allien in self.allice_lst:
+                if allien.pos_x - self.laser.pos_x < 0 and abs(allien.pos_x - self.laser.pos_x) <= allien.size_x:
+                    if allien.pos_y - self.laser.pos_y > 0 and (allien.pos_y - self.laser.pos_y) <= allien.size_y:
+                        self.allice_lst.remove(allien)
+                        self.laser = Laser()
+
         except:
             pass
 
@@ -117,11 +130,39 @@ class Game():
 
 
 
-            
+    def alliens_shoot_back(self):
+        most_up_one = self.allice_lst[0].pos_y
+        for i in self.allice_lst:
+            if i.pos_y == most_up_one:
+                if random.randint(0,800) == 9:
+                    laser = Laser()
+                    laser.pos_x = i.pos_x + i.size_x/2
+                    laser.pos_y = i.pos_y + i.size_y
+                    self.allins_laser_lst.append(laser)
 
 
+    def move_allien_lasers(self):
+        for i in self.allins_laser_lst:
+            laser_rect = pygame.Rect(i.pos_x,i.pos_y,i.laser_size_x,i.laser_size_y)
+            pygame.draw.rect(screen,(255,255,255),laser_rect)
+
+            i.pos_y += 10
+            if i.pos_y > height:
+                self.allins_laser_lst.remove(i)
 
         
+
+
+
+
+
+    def check_collision_for_allien_laser(self):
+        for laser in self.allins_laser_lst:
+            for obsticle in self.obsticle_lst:
+                if obsticle.pos_x - laser.pos_x < 0 and abs(obsticle.pos_x - laser.pos_x) <= obsticle.size:
+                    if obsticle.pos_y - laser.pos_y > 0 and (obsticle.pos_y - laser.pos_y) <= obsticle.size:
+                        self.obsticle_lst.remove(obsticle)
+                        self.allins_laser_lst.remove(laser)
 
 
     def ran(self):
@@ -130,7 +171,10 @@ class Game():
         self.draw_obsticles()
         self.move_alliens()
         self.draw_alliens()
+        self.alliens_shoot_back()
+        self.move_allien_lasers()
         self.check_laser_hit()
+        self.check_collision_for_allien_laser()
         self.move_laser()
 
     
