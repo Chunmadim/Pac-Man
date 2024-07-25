@@ -1,5 +1,6 @@
 import pygame
 import sys
+import random
 
 
 
@@ -9,8 +10,13 @@ import sys
 
 class Game():
     def __init__(self):
+        self.allice_lst = []
+        self.obsticle_lst = []
         self.player = Player()
         self.laser = Laser()
+        self.number_of_aliens = 55
+        self.spawn_alliens()
+        self.create_obsticles()
 
 
     def shoot_laser(self):
@@ -25,7 +31,7 @@ class Game():
         if self.laser.laser_is_out:
             laser_rect = pygame.Rect(self.laser.pos_x,self.laser.pos_y,self.laser.laser_size_x,self.laser.laser_size_y)
             pygame.draw.rect(screen,(255,255,255),laser_rect)
-            self.laser.pos_y -= 5
+            self.laser.pos_y -= 10
 
     def check_laser_hit(self):
         try:
@@ -34,20 +40,120 @@ class Game():
         except:
             pass
 
+    def spawn_alliens(self):
+        x = 50
+        y = 100
+        for i in range(self.number_of_aliens):
+            if x + 350 > width:
+                x = 50
+                y += 40 
+            allien = Aliens(x,y)
+            self.allice_lst.append(allien)
+            x += 50
+
+    def draw_alliens(self):
+        for i in self.allice_lst:
+            allien_rect = pygame.Rect(i.pos_x,i.pos_y,i.size_x,i.size_y)
+            pygame.draw.rect(screen,(255,255,255),allien_rect)
+
+
+    def move_alliens(self):
+        if self.allice_lst[0].move_left:
+            most_left_one_x = self.allice_lst[0].pos_x
+            for i in self.allice_lst:
+                if i.pos_x < most_left_one_x:
+                    most_left_one_x = i.pos_x
+            if most_left_one_x < 50:
+                for item in self.allice_lst:
+                    item.pos_y += 20
+                    item.move_left = False
+            else:
+                for item in self.allice_lst:
+                    item.pos_x -= 0.5
+        else:
+            most_right_one_x = self.allice_lst[0].pos_x
+            for i in self.allice_lst:
+                if i.pos_x > most_right_one_x:
+                    most_right_one_x = i.pos_x
+            if most_right_one_x + 100 > width:
+                for item in self.allice_lst:
+                    item.pos_y += 20
+                    item.move_left = True
+            else:
+                for item in self.allice_lst:
+                    item.pos_x += 0.5
+
+
+
+    def create_obsticles(self):
+        obsticle_range_x = 40
+
+        for i in range(4):
+            obsticle_range_y = 0
+            for row in range(3):
+                if row == 2:
+                    obsticle = Obsticles(obsticle_range_x + 150,height- 350+obsticle_range_y)
+                    obsticle2 = Obsticles(obsticle_range_x + 210,height- 350+obsticle_range_y)
+                    self.obsticle_lst.append(obsticle)
+                    self.obsticle_lst.append(obsticle2)
+                    obsticle_range_y += 40
+                else:
+                    obsticle = Obsticles(obsticle_range_x + 150,height- 350 +obsticle_range_y)
+                    obsticle2 = Obsticles(obsticle_range_x + 170,height- 350+obsticle_range_y)
+                    obsticle3 = Obsticles(obsticle_range_x + 190,height- 350+obsticle_range_y)
+                    obsticle4 = Obsticles(obsticle_range_x + 210,height- 350+obsticle_range_y)
+                    self.obsticle_lst.append(obsticle)
+                    self.obsticle_lst.append(obsticle2)
+                    self.obsticle_lst.append(obsticle3)
+                    self.obsticle_lst.append(obsticle4)
+                    obsticle_range_y +=20
+            obsticle_range_x += 150
+        
+
+    def draw_obsticles(self):
+        for i in self.obsticle_lst:
+            obsticle_rect = pygame.Rect(i.pos_x,i.pos_y,i.size,i.size)
+            pygame.draw.rect(screen,i.colour,obsticle_rect)
+
+
+
+            
+
+
+
+        
 
 
     def ran(self):
         self.player.create_player()
         self.player.update()
+        self.draw_obsticles()
+        self.move_alliens()
+        self.draw_alliens()
         self.check_laser_hit()
         self.move_laser()
+
+    
+class Obsticles():
+    def __init__(self,pos_x,pos_y) -> None:
+        self.strenght = 4
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.size = 20
+        self.colour = (38,87,16)
+
+    
         
 
 
-class Board():
-    def __init__(self) -> None:
-        pass
-
+class Aliens():
+    def __init__(self,pos_x,pos_y):
+        self.size_x = 40
+        self.size_y = 30
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.move_left = False
+        
 
 class Laser():
     def __init__(self) -> None:
@@ -69,9 +175,9 @@ class Player():
     def get_input(self):
         keys = pygame.key.get_pressed()
 
-        if keys[pygame.K_RIGHT]:
+        if keys[pygame.K_RIGHT] and self.player_inside_window(1):
             self.pos_x += self.speed
-        elif keys[pygame.K_LEFT]:
+        elif keys[pygame.K_LEFT] and self.player_inside_window(0):
             self.pos_x -= self.speed
 
     def update(self):
@@ -90,9 +196,13 @@ class Player():
         pygame.draw.rect(screen,(255,255,255), player_rect)
 
 
-    def player_inside_window(self):
-        if self.pos_x + 5 < width and self.pos_x -5 > 0:
+    def player_inside_window(self,index):
+        if self.pos_x + 55 < width and index ==1:
             return True
+        elif self.pos_x -5 > 0 and index == 0:
+            return True
+        else:
+            return False
         
 
 
