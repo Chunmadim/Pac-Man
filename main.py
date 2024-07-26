@@ -19,6 +19,30 @@ class Game():
         self.spawn_alliens()
         self.create_obsticles()
 
+        self.red = pygame.image.load("red.png")
+        self.yellow = pygame.image.load("yellow.png")
+        self.green = pygame.image.load("green.png")
+
+        self.font = pygame.font.Font(None,45)
+        self.score = 0
+        music = pygame.mixer.Sound("music.wav")
+        music.set_volume(0.1)
+        music.play(loops= -1)
+
+        self.laser_sound = pygame.mixer.Sound("laser.wav")
+        self.laser_sound.set_volume(0.3)
+        self.explosion_sound = pygame.mixer.Sound("explosion.wav")
+        self.laser_sound.set_volume(0.3)
+
+
+
+    def display_score(self):
+        score_rect = pygame.Rect(100,50,100,20)
+        score_surface = self.font.render(str(self.score),True,(255,255,255))
+        screen.blit(score_surface,score_rect)
+        
+
+
 
     def shoot_laser(self):
         if not self.laser.laser_is_out:
@@ -27,12 +51,14 @@ class Game():
             self.laser.laser_is_out = True
             laser_rect = pygame.Rect(self.laser.pos_x,self.laser.pos_y -10,self.laser.laser_size_x,self.laser.laser_size_y)
             pygame.draw.rect(screen,(255,255,255),laser_rect)
+            self.laser_sound.play()
 
     def move_laser(self):
         if self.laser.laser_is_out:
             laser_rect = pygame.Rect(self.laser.pos_x,self.laser.pos_y,self.laser.laser_size_x,self.laser.laser_size_y)
             pygame.draw.rect(screen,(255,255,255),laser_rect)
-            self.laser.pos_y -= 10
+            self.laser.pos_y -= 15
+        
 
     def check_laser_hit(self):
         try:
@@ -41,13 +67,17 @@ class Game():
             for obsticle in self.obsticle_lst:
                 if obsticle.pos_x - self.laser.pos_x < 0 and abs(obsticle.pos_x - self.laser.pos_x) <= obsticle.size:
                     if obsticle.pos_y - self.laser.pos_y > 0 and (obsticle.pos_y - self.laser.pos_y) <= obsticle.size:
-                        self.obsticle_lst.remove(obsticle)
+                        obsticle.strenght -= 1
+                        self.check_obsiticle_strenght(obsticle)
+                        
                         self.laser = Laser()
             
             for allien in self.allice_lst:
                 if allien.pos_x - self.laser.pos_x < 0 and abs(allien.pos_x - self.laser.pos_x) <= allien.size_x:
                     if allien.pos_y - self.laser.pos_y > 0 and (allien.pos_y - self.laser.pos_y) <= allien.size_y:
                         self.allice_lst.remove(allien)
+                        self.explosion_sound.play()
+                        self.score += allien.score
                         self.laser = Laser()
 
         except:
@@ -59,16 +89,29 @@ class Game():
         for i in range(self.number_of_aliens):
             if x + 350 > width:
                 x = 50
-                y += 40 
-            allien = Aliens(x,y)
+                y += 40
+            if i <= 10:
+                allien = Aliens(x,y,"red")
+            elif i > 10 and i <= 32:
+                allien = Aliens(x,y,"yellow")
+            else:
+                allien = Aliens(x,y,"green")
             self.allice_lst.append(allien)
             x += 50
 
     def draw_alliens(self):
+        count = 0
         for i in self.allice_lst:
-            allien_rect = pygame.Rect(i.pos_x,i.pos_y,i.size_x,i.size_y)
-            pygame.draw.rect(screen,(255,255,255),allien_rect)
 
+            allien_rect = pygame.Rect(i.pos_x,i.pos_y,i.size_x,i.size_y)
+            if i.colour == "red":
+                screen.blit(self.red,allien_rect)
+            elif i.colour == "yellow":
+                screen.blit(self.yellow,allien_rect)
+            else:
+                screen.blit(self.green,allien_rect)
+
+            count += 1
 
     def move_alliens(self):
         if self.allice_lst[0].move_left:
@@ -82,7 +125,7 @@ class Game():
                     item.move_left = False
             else:
                 for item in self.allice_lst:
-                    item.pos_x -= 0.5
+                    item.pos_x -= 1.0
         else:
             most_right_one_x = self.allice_lst[0].pos_x
             for i in self.allice_lst:
@@ -94,7 +137,7 @@ class Game():
                     item.move_left = True
             else:
                 for item in self.allice_lst:
-                    item.pos_x += 0.5
+                    item.pos_x += 1.0
 
 
 
@@ -126,7 +169,12 @@ class Game():
     def draw_obsticles(self):
         for i in self.obsticle_lst:
             obsticle_rect = pygame.Rect(i.pos_x,i.pos_y,i.size,i.size)
-            pygame.draw.rect(screen,i.colour,obsticle_rect)
+            if i.strenght == 3:
+                pygame.draw.rect(screen,i.colour_3,obsticle_rect)
+            elif i.strenght == 2:
+                pygame.draw.rect(screen,i.colour_2,obsticle_rect)
+            else:
+                pygame.draw.rect(screen,i.colour_1,obsticle_rect)
 
 
 
@@ -134,11 +182,12 @@ class Game():
         most_up_one = self.allice_lst[0].pos_y
         for i in self.allice_lst:
             if i.pos_y == most_up_one:
-                if random.randint(0,800) == 9:
+                if random.randint(0,750) == 9:
                     laser = Laser()
                     laser.pos_x = i.pos_x + i.size_x/2
                     laser.pos_y = i.pos_y + i.size_y
                     self.allins_laser_lst.append(laser)
+                    self.laser_sound.play()
 
 
     def move_allien_lasers(self):
@@ -153,7 +202,10 @@ class Game():
         
 
 
-
+    def check_obsiticle_strenght(self,obsticle):
+        if obsticle.strenght == 0:
+            self.obsticle_lst.remove(obsticle)
+            self.explosion_sound.play()
 
 
     def check_collision_for_allien_laser(self):
@@ -161,11 +213,36 @@ class Game():
             for obsticle in self.obsticle_lst:
                 if obsticle.pos_x - laser.pos_x < 0 and abs(obsticle.pos_x - laser.pos_x) <= obsticle.size:
                     if obsticle.pos_y - laser.pos_y > 0 and (obsticle.pos_y - laser.pos_y) <= obsticle.size:
-                        self.obsticle_lst.remove(obsticle)
+                        obsticle.strenght -= 1
+                        self.check_obsiticle_strenght(obsticle)
                         self.allins_laser_lst.remove(laser)
+            if self.player.pos_x - laser.pos_x < 0 and abs(self.player.pos_x - laser.pos_x) <= self.player.size_x:
+                if self.player.pos_y - laser.pos_y > 0 and (self.player.pos_y - laser.pos_y) <= self.player.size_y:
+                    self.allins_laser_lst.remove(laser)
+                    self.player.health -= 1
+                    self.explosion_sound.play()
 
+
+    def victory_message(self):
+        if len(self.allice_lst) == 0:
+            victory_surf = self.font.render("You won",True, "white")
+            victory_rect = victory_surf.get_rect(center = (width / 2,height/2))
+            screen.blit(victory_surf,victory_rect)
+
+
+    def check_game_over(self):
+        if self.player.health ==0:
+            defeat_surf = self.font.render("You lost, ghosari",True, "white")
+            defeat_rect = defeat_surf.get_rect(center = (width / 2,height/2))
+            screen.blit(defeat_surf,defeat_rect)
+ 
+        if self.allice_lst[-1].pos_y >height -290:
+            defeat_surf = self.font.render("You lost, ghosari",True, "white")
+            defeat_rect = defeat_surf.get_rect(center = (width / 2,height/2))
+            screen.blit(defeat_surf,defeat_rect)
 
     def ran(self):
+
         self.player.create_player()
         self.player.update()
         self.draw_obsticles()
@@ -176,28 +253,40 @@ class Game():
         self.check_laser_hit()
         self.check_collision_for_allien_laser()
         self.move_laser()
+        self.check_game_over()
+        self.display_score()
+        self.victory_message()
+        self.player.show_health()
 
     
 class Obsticles():
     def __init__(self,pos_x,pos_y) -> None:
-        self.strenght = 4
+        self.strenght = 3
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.size = 20
-        self.colour = (38,87,16)
+        self.colour_3 = (255,0,5)
+        self.colour_2 = (255, 254, 64)
+        self.colour_1 = (84,251,13)
 
     
         
 
 
 class Aliens():
-    def __init__(self,pos_x,pos_y):
+    def __init__(self,pos_x,pos_y,colour):
         self.size_x = 40
         self.size_y = 30
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.move_left = False
+        self.colour = colour
+        if self.colour == "red": self.score = 1000
+        elif self.colour == "yellow": self.score = 500
+        else: self.score = 100
+
         
+
 
 class Laser():
     def __init__(self) -> None:
@@ -208,6 +297,7 @@ class Laser():
         self.pos_y = None
 
 
+
 class Player():
     def __init__(self) -> None:
         self.size_x = 50
@@ -215,6 +305,18 @@ class Player():
         self.pos_x = width /2
         self.pos_y = height - 50
         self.speed = 5
+        self.health = 3
+        self.player_image = pygame.image.load("player.png")
+
+
+
+    def show_health(self):
+        range_x = 0
+        for i in range(self.health):
+            rect = pygame.Rect(width - 100 - range_x, 50, self.size_x,self.size_y)
+            screen.blit(self.player_image,rect)
+            range_x += 80
+
 
     def get_input(self):
         keys = pygame.key.get_pressed()
@@ -224,8 +326,10 @@ class Player():
         elif keys[pygame.K_LEFT] and self.player_inside_window(0):
             self.pos_x -= self.speed
 
+
     def update(self):
         self.get_input()
+
 
     def move_player(self,index):
         if index == 0:
@@ -234,17 +338,21 @@ class Player():
             self.pos_x -= 5
 
 
+
     def create_player(self):
 
         player_rect = pygame.Rect(self.pos_x,self.pos_y,self.size_x,self.size_y)
-        pygame.draw.rect(screen,(255,255,255), player_rect)
+        screen.blit(self.player_image,player_rect)
+
 
 
     def player_inside_window(self,index):
-        if self.pos_x + 55 < width and index ==1:
+        if self.pos_x + 115 < width and index ==1:
             return True
-        elif self.pos_x -5 > 0 and index == 0:
+        
+        elif self.pos_x -50 > 0 and index == 0:
             return True
+        
         else:
             return False
         
@@ -262,10 +370,8 @@ if __name__ == "__main__":
     SCREEN_UPDATE = pygame.USEREVENT
     pygame.time.set_timer(SCREEN_UPDATE,150)
     game = Game()
+    rect = pygame.Rect(50,height-15,width -105, 5 )
     
-
-
-
 
 
 
@@ -287,10 +393,10 @@ if __name__ == "__main__":
         
                 
 
-
+        background = pygame.Rect(0,0,width,height)
         screen.fill((0,0,0))
         game.ran()
-
+        pygame.draw.rect(screen, (38,87,16), rect)
         pygame.display.update()
         clock.tick(60)
 
